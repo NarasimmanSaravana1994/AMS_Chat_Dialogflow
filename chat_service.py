@@ -1,4 +1,4 @@
-from fastapi import Request, FastAPI
+from fastapi import Request, FastAPI,File, Form, UploadFile
 import uvicorn
 
 ''' application modules '''
@@ -41,6 +41,14 @@ async def chat_services(chat_request: request_model.Request_Object):
     
     ## flow part need to implement ###
     return {"msg": "success"}
+
+@app.post("/upload-file/")
+async def upload_file(uploded_file: UploadFile = File(...)):
+    os.mkdir("files")
+    file_name = os.getcwd()+"/files/"+uploded_file.filename.replace(" ", "-")
+    with open(file_name,'wb+') as f:
+        f.write(uploded_file.file.read())
+        f.close()
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)
