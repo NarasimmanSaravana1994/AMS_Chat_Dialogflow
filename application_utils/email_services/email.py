@@ -4,6 +4,7 @@ import smtplib
 import ssl
 import datetime
 from ConfigParser import SafeConfigParser
+from threading import Thread
 
 ''' application modules '''
 from database_utils.mongo_utils import mongo_db_util as db
@@ -20,47 +21,57 @@ to = parser.get('email_congfiguration_details', 'to')
 html_string = '''<html><body><div>Hi team </div><div>Please refer below mentioned chat dialogflow history  </div> <br/> {} <br/><div>Thanks & Regards </div><div>AMS chatbot Support </div></body></html>'''
 
 
-def email_sending(session_id: int, company_id: int, domain_id: int) -> bool:
-	try:
-        chat_history = (db.get_value_with_session_id(session_id))['chat_flow']
-        chat_questions = db.get_question_chat(company_id, domain_id)['questions']
+class Email_triggering(Thread):
+    def __init__(self, session_id, company_id, domain_id):
+        Thread.__init__(self)
+        self.session_id = session_id
+        self.company_id = company_id
+        self.domain_id = domain_id
 
-        questions = []
-        answers = []
+    def email_sending(self):
+        try:
+            chat_history = (db.get_value_with_session_id(
+                self.session_id))['chat_flow']
+            chat_questions = db.get_question_chat(
+                self.company_id, self.domain_id)['questions']
 
-        for value in chat_history:
-            question_id = int(value["question_id"])
-            answer = value["answer"]
-            for chat_question in chat_questions:
-                if chat_question["question_id"] == question_id:
-                    questions.append(chat_question["question"])
-                    answers.append(answer)
-                    break
+            questions = []
+            answers = []
 
-        #html = "<div> Question : {} </div>  <div> Answer : {} </div>"
-        final_html = ""
-        for index, value in enumerate(questions):
-            string = html.format(value.replace("\n", ""), answers[index])
-            final_html = final_html + string + "  "
-        mail_html_content = html_string.format(final_html)
-        msg = MIMEMultipart()
-        msg['Subject'], msg['From'], msg['To'] = "REG : Chat dialogflow history...", me, ",".join(to)
-        ctype = "application/octet-stream"
+            for value in chat_history:
+                question_id = int(value["question_id"])
+                answer = value["answer"]
+                for chat_question in chat_questions:
+                    if chat_question["question_id"] == question_id:
+                        questions.append(chat_question["question"])
+                        answers.append(answer)
+                        break
 
-        maintype, subtype = ctype.split("/", 1)
-        text = MIMEText(mail_html_content, 'html')
-        msg.attach(text)
-        s = smtplib.SMTP('smtp.zoho.com', 587)
-        context = ssl.create_default_context()
-        s.starttls(context=context)
-        s.login(me, password)
+            #html = "<div> Question : {} </div>  <div> Answer : {} </div>"
+            final_html = ""
+            for index, value in enumerate(questions):
+                string = html.format(value.replace("\n", ""), answers[index])
+                final_html = final_html + string + "  "
+            mail_html_content = html_string.format(final_html)
+            msg = MIMEMultipart()
+            msg['Subject'], msg['From'], msg['To'] = "REG : Chat dialogflow history...", me, ",".join(
+                to)
+            ctype = "application/octet-stream"
 
-        s.sendmail(me, to, msg.as_string())
-        s.quit()
-        return True
-	except Exception as ex:
-		logf = open("Email_error.log", "w")
-		logf.write("Error == {0} : {1}\n".format(
-			now.strftime("%Y-%m-%d %H:%M:%S"), str(ex.strerror)))
-		logf.close()
-		return False
+            maintype, subtype = ctype.split("/", 1)
+            text = MIMEText(mail_html_content, 'html')
+            msg.attach(text)
+            s = smtplib.SMTP('smtp.zoho.com', 587)
+            context = ssl.create_default_context()
+            s.starttls(context=context)
+            s.login(me, password)
+
+            s.sendmail(me, to, msg.as_string())
+            s.quit()
+            return True
+        except Exception as ex:
+            logf = open("Email_error.log", "w")
+            logf.write("Error == {0} : {1}\n".format(
+                now.strftime("%Y-%m-%d %H:%M:%S"), str(ex.strerror)))
+            logf.close()
+            return False

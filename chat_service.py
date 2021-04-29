@@ -1,4 +1,4 @@
-from fastapi import Request, FastAPI,File, Form, UploadFile
+from fastapi import Request, FastAPI, File, Form, UploadFile, status
 import uvicorn
 
 ''' application modules '''
@@ -6,7 +6,9 @@ from model_files import request_model
 from model_files import responce_model
 from database_utils.mongo_utils import mongo_db_util
 from database_utils.sql_utils import sql_db_util
-
+from application_utils import bussiness
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 app = FastAPI()
 
 
@@ -20,7 +22,7 @@ app = FastAPI()
                               }}}
           )
 async def chat_services(chat_request: request_model.Request_Object):
-    
+
     ''' getting the mandatory properties for chat dialogflow'''
     session_id = chat_request.sessionid
     company_id = chat_request.companyid
@@ -35,20 +37,25 @@ async def chat_services(chat_request: request_model.Request_Object):
         await mongo_db_util.insert_collection(session_id=session_id)
         question_id = 1
         new_session = True
-    
+
     if not new_session:
         await mongo_db_util.update_chat_dialogflow(session_id=session_id, chat_dialogflow=chat_request)
-    
-    ## flow part need to implement ###
-    return {"msg": "success"}
 
-@app.post("/upload-file/")
+    ## flow part need to implement ###
+    next_dialogflow = bussiness.verify_user_answer(
+        company_id=company_id, domain_id=domain_id, question_id=question_id, answer=user_chat)
+
+    return JSONResponse(status_code=status.HTTP_200_OK, content=jsonable_encoder(next_dialogflow), media_type="application/json")
+
+
+@app.post("/upload-file/", status=200)
 async def upload_file(uploded_file: UploadFile = File(...)):
     os.mkdir("files")
     file_name = os.getcwd()+"/files/"+uploded_file.filename.replace(" ", "-")
-    with open(file_name,'wb+') as f:
+    with open(file_name, 'wb+') as f:
         f.write(uploded_file.file.read())
         f.close()
+    return "Success"
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8001)
