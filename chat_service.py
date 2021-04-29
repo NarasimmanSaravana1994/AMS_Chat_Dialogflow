@@ -4,6 +4,8 @@ import uvicorn
 ''' application modules '''
 from model_files import request_model
 from model_files import responce_model
+from database_utils.mongo_utils import mongo_db_util
+from database_utils.sql_utils import sql_db_util
 
 app = FastAPI()
 
@@ -17,7 +19,21 @@ app = FastAPI()
                               "description": "Return the chat dialogflow mandatory properties.",
                               }}}
           )
-async def chat_services():
+async def chat_services(chat_request: request_model.Request_Object):
+    
+    ''' getting the mandatory properties for chat dialogflow'''
+    session_id = chat_request.sessionid
+    company_id = chat_request.companyid
+    domain_id = chat_request.domainid
+    question_id = chat_request.questionid
+    user_chat = chat_request.userchat
+
+    ''' check session is exist or not, if not exit create a new session with the help of client browser session id'''
+    if not await mongo_db_util.is_sessionid_exists(session_id=session_id):
+        await mongo_db_util.insert_collection(session_id=session_id)
+        question_id = 1
+    
+    ## flow part need to implement ###
     return {"msg": "success"}
 
 if __name__ == "__main__":
