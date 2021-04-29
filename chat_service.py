@@ -28,10 +28,16 @@ async def chat_services(chat_request: request_model.Request_Object):
     question_id = chat_request.questionid
     user_chat = chat_request.userchat
 
+    new_session = False
+
     ''' check session is exist or not, if not exit create a new session with the help of client browser session id'''
     if not await mongo_db_util.is_sessionid_exists(session_id=session_id):
         await mongo_db_util.insert_collection(session_id=session_id)
         question_id = 1
+        new_session = True
+    
+    if not new_session:
+        await mongo_db_util.update_chat_dialogflow(session_id=session_id, chat_dialogflow=chat_request)
     
     ## flow part need to implement ###
     return {"msg": "success"}

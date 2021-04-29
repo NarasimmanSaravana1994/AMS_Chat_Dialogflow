@@ -33,3 +33,28 @@ def insert_collection(session_id: int) -> bool:
         return True
     except Exception as ex:
         return False
+
+
+def update_chat_dialogflow(session_id, chat_dialogflow):
+    try:
+        '''
+        is_exit = session.find({"$and": [{"session_id": session_id}, {
+                               "chat_flow.question_id": chat_flow['question_id']}]}).count()
+
+        if is_exit == 1:
+            session.update({"$and": [{"session_id": session_id}, {"chat_flow.question_id": chat_flow['question_id']}]}, {
+                           "$set": {"chat_flow.$.answer": chat_flow['answer']}})
+        else:
+        '''
+        session.update_one(
+            {
+                "session_id": str(session_id)},
+            {
+                "$push": {
+                    "chat_dialogflow": chat_dialogflow
+                }
+            }
+        )
+
+    except Exception as ex:
+        return False
