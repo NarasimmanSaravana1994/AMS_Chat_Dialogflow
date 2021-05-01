@@ -1,5 +1,7 @@
 from fastapi import Request, FastAPI, File, Form, UploadFile, status
 import uvicorn
+from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 
 ''' application modules '''
 from model_files import request_model
@@ -7,8 +9,7 @@ from model_files import responce_model
 from database_utils.mongo_utils import mongo_db_util
 from database_utils.sql_utils import sql_db_util
 from application_utils import bussiness
-from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
+
 app = FastAPI()
 
 
@@ -37,11 +38,12 @@ async def chat_services(chat_request: request_model.Request_Object):
         await mongo_db_util.insert_collection(session_id=session_id)
         question_id = 1
         new_session = True
-
+    
+    ''' update the user responce '''
     if not new_session:
         await mongo_db_util.update_chat_dialogflow(session_id=session_id, chat_dialogflow=chat_request)
 
-    ## flow part need to implement ###
+    ''' chat dialog flow '''
     next_dialogflow = bussiness.verify_user_answer(
         company_id=company_id, domain_id=domain_id, question_id=question_id, answer=user_chat)
 

@@ -20,7 +20,7 @@ to = parser.get('email_congfiguration_details', 'to')
 ''' Basic email template '''
 html_string = '''<html><body><div>Hi team </div><div>Please refer below mentioned chat dialogflow history  </div> <br/> {} <br/><div>Thanks & Regards </div><div>AMS chatbot Support </div></body></html>'''
 
-
+''' Email service '''
 class Email_triggering(Thread):
     def __init__(self, session_id, company_id, domain_id):
         Thread.__init__(self)
